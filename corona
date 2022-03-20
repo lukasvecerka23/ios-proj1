@@ -1,0 +1,78 @@
+#!/bin/bash
+
+export POSIXLY_CORRECT=yes
+
+command_list=(infected merge gender age daily monthly yearly countries districts regions)
+
+COMMAND=""
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+    -h)
+        echo "Usage: ..."
+        exit 0
+        ;; 
+    infected | merge | gender | age | daily | monthly | yearly | countries | districts | regions)
+        if [ "$COMMAND" = "" ]; then
+            COMMAND="$1"
+            echo $COMMAND
+            shift
+        else 
+            shift
+        fi
+        ;;
+    -a)
+        # TODO - validate DATE input 
+        if [ "$2" = "" ]; then
+            echo -e "-a: Missing date parameter"
+            exit 1
+        fi
+        AFTER_DATE="$2"
+        echo $AFTER_DATE
+        shift
+        shift
+        ;;
+    -b)
+        # TODO - validate DATE input
+        if [ "$2" = "" ]; then
+            echo -e "-b: Missing date parameter"
+            exit 1
+        fi
+        BEFORE_DATE="$2"
+        echo $BEFORE_DATE
+        shift
+        shift
+        ;;       
+    -g)
+        # TODO - validate GENDER input
+        if [ "$2" = "" ]; then
+            echo -e "-g: Missing gender parameter"
+            exit 1
+        fi
+        GENDER="$2"
+        echo $GENDER
+        shift
+        shift
+        ;;
+    -s)
+        # TODO - validate WIDTH input
+        if [ "$2" == "infected" ]; then
+            echo "Width is not set"
+            shift
+        else
+            WIDTH="$2"
+            echo $WIDTH
+            shift
+            shift
+        fi
+        ;;
+    *.csv)
+        awk 'END { print NR }' $1
+        shift
+        ;;
+    *)
+        echo -e "Invalid command"
+        exit 1
+        ;;
+    esac
+done
