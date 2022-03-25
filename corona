@@ -1,12 +1,16 @@
 #!/bin/bash
 
 export POSIXLY_CORRECT=yes
+export LC_NUMERIC=en_US.UTF-8
 
 command_list=(infected merge gender age daily monthly yearly countries districts regions)
 
 COMMAND=""
+FILE=""
+GZ_FILE=""
 
-while [ "$#" -gt 0 ]; do
+# Parsing filter tag and commands
+while [ $# -gt 0 ]; do
     case "$1" in
     -h)
         echo "Usage: ..."
@@ -55,24 +59,43 @@ while [ "$#" -gt 0 ]; do
         shift
         ;;
     -s)
-        # TODO - validate WIDTH input
-        if [ "$2" == "infected" ]; then
-            echo "Width is not set"
-            shift
-        else
+        if [[ $2 =~ [0-9]{1} ]]; then
+            echo $2
             WIDTH="$2"
-            echo $WIDTH
             shift
+            shift
+            
+        else
             shift
         fi
         ;;
+
     *.csv)
-        awk 'END { print NR }' $1
+        FILE="$1"
         shift
         ;;
-    *)
+
+    *.csv.gz)
+        GZ_FILE="$(gunzip -qc $1)"
+        shift
+        ;;
+
+    ?*)
         echo -e "Invalid command"
         exit 1
         ;;
+    *)
+        break
+        ;;
     esac
 done
+
+if [ "$FILE" != "" ]; then
+    TEST=$(cat "$FILE" | awk 'END{print NR}')
+    echo $TEST
+fi
+
+if [ "$GZ_FILE" != "" ]; then
+    TEST=$(echo "$GZ_FILE" | awk 'END{print NR}')
+    echo $TEST
+fi
