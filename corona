@@ -8,7 +8,9 @@ command_list=(infected merge gender age daily monthly yearly countries districts
 COMMAND=""
 FILE=""
 GZ_FILE=""
+BZ_FILE=""
 
+# Function for date validation using regex
 checkDate(){
     local status=1
     if [[ $1 =~ ((18|19|20)[0-9]{2}[\-.](0[13578]|1[02])[\-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[\-.](0[469]|11)[\-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[\-.](02)[\-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[\-.](02)[\-.]29 ]];
@@ -22,7 +24,25 @@ checkDate(){
 while [ $# -gt 0 ]; do
     case "$1" in
     -h)
-        echo "Usage: ..."
+        echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]]"
+        echo ""
+        echo "COMMAND option:"
+        echo "  infected - count of infected persons"
+        echo "  merge - merge several files to one, keep original ordering, header in ouput is only one"
+        echo "  gender - count of infected persons for specific gender"
+        echo "  age - count of infected persons sorted by age intervals"
+        echo "  daily - daily statistic of infected persons"
+        echo "  monthly - monthly statistic of infected persons"
+        echo "  yearly - yearly statistic of infected persons"
+        echo "  countries - statistic of infected persons for each country"
+        echo "  districts - statistic of infected persons for each district"
+        echo "  regions - statistic of infected persons for each region"
+        echo "FILTERS option:"
+        echo "  -a DATETIME - script will work only with records with date AFTER defined DATETIME (format YYYY-MM-DD)"
+        echo "  -b DATETIME - script will work only with records with date BEFORE defined DATETIME (format YYYY-MM-DD)"
+        echo "  -g GENDER - script will work only with records with defined GENDER (can be M or Z)"
+        echo "  -s [WIDTH] - for command gender, age, daily, monthly, yearly, countries, districts and regions output data in histogram"
+        echo "               WIDTH is optional parameter to set width of histogram (length of the widest row)"
         exit 0
         ;; 
     infected | merge | gender | age | daily | monthly | yearly | countries | districts | regions)
@@ -86,7 +106,6 @@ while [ $# -gt 0 ]; do
             echo -e "Wrong gender format"
             exit 1
         fi
-        
         ;;
     -s)
         if [[ $2 =~ [0-9]{1} ]]; then
@@ -106,7 +125,14 @@ while [ $# -gt 0 ]; do
         ;;
 
     *.csv.gz)
-        GZ_FILE="$(gunzip -qc $1)"
+        GZ_FILE="$(gzcat $1)"
+        echo "$GZ_FILE"
+        shift
+        ;;
+
+    *.csv.bz2)
+        BZ_FILE="$(bzcat $1)"
+        echo "$BZ_FILE"
         shift
         ;;
 
@@ -122,17 +148,24 @@ done
 
 
 #TODO bzip2 file reading
+if [ "$FILE" = "" -a "$GZ_FILE" = "" -a "$BZ_FILE" = "" ];
+    then
+        cat
+fi
 
 if [ "$FILE" != "" ]; then
     TEST=$(cat "$FILE" | awk 'END{print NR}')
     echo $TEST
-    else
-        FILE=`cat`
-        echo "$FILE"
 fi
 
 if [ "$GZ_FILE" != "" ]; then
     TEST=$(echo "$GZ_FILE" | awk 'END{print NR}')
-    echo $TEST
+    echo "$TEST"
+fi
+
+if [ "$BZ_FILE" != "" ]; then
+    
+    TEST=$(echo "$BZ_FILE" | awk 'END{print NR}')
+    echo "$TEST"
 fi
 
