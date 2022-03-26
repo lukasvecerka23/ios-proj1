@@ -3,12 +3,15 @@
 export POSIXLY_CORRECT=yes
 export LC_NUMERIC=en_US.UTF-8
 
-command_list=(infected merge gender age daily monthly yearly countries districts regions)
-
 COMMAND=""
 FILE=""
 GZ_FILE=""
 BZ_FILE=""
+
+GENDER_SET=0
+DATE_AFTER_SET=0
+DATE_BEFORE_SET=0
+WIDTH_SET=0
 
 # Function for date validation using regex
 checkDate(){
@@ -18,6 +21,22 @@ checkDate(){
         status=0
     fi
     return $status
+}
+
+# Filter functions
+dateAfterFilter(){
+    OUT=$(echo "$FILE" | awk -F ',' -v date="$AFTER_DATE" '{ if ($2 >= date) print $0}')
+    echo "$OUT"
+}
+
+dateBeforeFilter(){
+    OUT=$(echo "$FILE" | awk -F ',' -v date="$BEFORE_DATE" '{ if ($2 <= date) print $0}')
+    echo "$OUT"
+}
+
+genderFilter(){
+    OUT=$(echo "$FILE" | awk -F ',' -v g="$GENDER" '{ if ($4 == g) print $0}')
+    echo "$OUT"
 }
 
 # Parsing filter tag and commands
@@ -48,7 +67,6 @@ while [ $# -gt 0 ]; do
     infected | merge | gender | age | daily | monthly | yearly | countries | districts | regions)
         if [ "$COMMAND" = "" ]; then
             COMMAND="$1"
-            echo $COMMAND
             shift
         else 
             shift
@@ -59,8 +77,8 @@ while [ $# -gt 0 ]; do
         then
             if checkDate "$2";
             then
+                DATE_AFTER_SET=1
                 AFTER_DATE="$2"
-                echo $AFTER_DATE
                 shift
                 shift
             else
@@ -77,8 +95,8 @@ while [ $# -gt 0 ]; do
         then
             if checkDate "$2";
             then
+                DATE_BEFORE_SET=1
                 BEFORE_DATE="$2"
-                echo $BEFORE_DATE
                 shift
                 shift
             else
@@ -91,25 +109,26 @@ while [ $# -gt 0 ]; do
         fi
         ;;   
     -g)
-        if [ "$2" = "" ];
+        if [ "$2" != "" ];
         then
-            echo -e "-g: Missing gender parameter"
-            exit 1
-        fi
-        if [[ $2 =~ [MZ] ]];
-        then
-            GENDER="$2"
-            echo $GENDER
-            shift
-            shift
+            if [ "$2" = "M" -o "$2" = "Z" ];
+            then
+                GENDER_SET=1
+                GENDER="$2"
+                shift
+                shift
+            else
+                echo -e "Wrong gender format or missing gender parameter"
+                exit 1
+            fi
         else
-            echo -e "Wrong gender format"
+            echo -e "-g: Missing gender parameter"
             exit 1
         fi
         ;;
     -s)
-        if [[ $2 =~ [0-9]{1} ]]; then
-            echo $2
+        if [[ $2 =~ [0-9]+ ]]; then
+            WIDTH_SET=1
             WIDTH="$2"
             shift
             shift
@@ -120,19 +139,17 @@ while [ $# -gt 0 ]; do
         ;;
 
     *.csv)
-        FILE="$1"
+        FILE="$(cat $1)"
         shift
         ;;
 
     *.csv.gz)
-        GZ_FILE="$(gzcat $1)"
-        echo "$GZ_FILE"
+        FILE="$(gzcat $1)"
         shift
         ;;
 
     *.csv.bz2)
-        BZ_FILE="$(bzcat $1)"
-        echo "$BZ_FILE"
+        FILE="$(bzcat $1)"
         shift
         ;;
 
@@ -147,25 +164,29 @@ while [ $# -gt 0 ]; do
 done
 
 
-#TODO bzip2 file reading
-if [ "$FILE" = "" -a "$GZ_FILE" = "" -a "$BZ_FILE" = "" ];
+if [ "$FILE" = "" ];
     then
         cat
 fi
 
 if [ "$FILE" != "" ]; then
-    TEST=$(cat "$FILE" | awk 'END{print NR}')
-    echo $TEST
-fi
-
-if [ "$GZ_FILE" != "" ]; then
-    TEST=$(echo "$GZ_FILE" | awk 'END{print NR}')
+    TEST=$(echo "$FILE" | awk 'END{print NR}')
     echo "$TEST"
 fi
 
-if [ "$BZ_FILE" != "" ]; then
-    
-    TEST=$(echo "$BZ_FILE" | awk 'END{print NR}')
-    echo "$TEST"
+if [ $DATE_AFTER_SET -eq 1 ];
+then
+    FILE=$(dateAfterFilter)
 fi
 
+if [ $DATE_BEFORE_SET -eq 1 ];
+then
+    FILE=$(dateBeforeFilter)
+fi
+
+if [ $GENDER_SET -eq 1 ];
+then
+    FILE=$(genderFilter)
+fi
+
+echo "$FILE"
