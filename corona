@@ -66,15 +66,60 @@ gender(){
 }
 
 merge(){
-    # Files are merged from parsing arguments
+    # Files are already merged from parsing
     echo "$FILE"
 }
-
-#age(){
-#}
+# {A[$3]++;}
+age(){
+    OUT=$(echo "$FILE" |\
+        awk -F ',' \
+        'NR>1{
+            if ($3 >= 0 && $3 <=5)
+                B[0]++
+            else if ($3 >= 6 && $3 <=15)
+                B[1]++
+            else if ($3 >= 16 && $3 <=25)
+                B[2]++
+            else if ($3 >= 26 && $3 <=35)
+                B[3]++
+            else if ($3 >= 36 && $3 <=45)
+                B[4]++
+            else if ($3>= 46 && $3 <=55)
+                B[5]++
+            else if ($3 >= 56 && $3 <=65)
+                B[6]++
+            else if ($3>= 66 && $3 <=75)
+                B[7]++
+            else if ($3 >= 76 && $3 <=85)
+                B[8]++
+            else if ($3 >= 86 && $3 <=95)
+                B[9]++
+            else if ($3 >= 96 && $3 <=105)
+                B[10]++
+            else if ($3 >= 105)
+                B[11]++
+            else
+                B[12]++
+        } END {
+            print "0-5   :", B[0];
+            print "6-15  :", B[1];
+            print "16-25 :", B[2];
+            print "26-35 :", B[3];
+            print "36-45 :", B[4];
+            print "46-55 :", B[5];
+            print "56-65 :", B[6];
+            print "66-75 :", B[7];
+            print "76-85 :", B[8];
+            print "86-95 :", B[9];
+            print "96-105:", B[10];
+            print ">105  :", B[11];
+            print "None  :", B[12];
+        }')
+    echo "$OUT"
+}
 
 daily(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$2]++;}END{for(i in A) print i ":", A[i]}'| sort -nk2)
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$2]++;}END{for(i in A){} print i ":", A[i]}'| sort -nk2)
     echo "$OUT"
 }
 
@@ -269,6 +314,7 @@ case $COMMAND in
         exit 0
         ;;
     age)
+        age
         ;;
     daily)
         daily
