@@ -6,8 +6,7 @@ export LC_NUMERIC=en_US.UTF-8
 COMMAND=""
 HEADER="id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs\n"
 FILE=$HEADER
-GZ_FILE=""
-BZ_FILE=""
+WIDTH=""
 
 GENDER_SET=0
 DATE_AFTER_SET=0
@@ -27,7 +26,7 @@ checkDate(){
 
 validateInput(){
     FILE=$(echo "$FILE" | grep "\S" $1)
-    FILE=$(echo "$FILE" | awk -F ',' -v dateregex="((18|19|20)[0-9]{2}[\-.](0[13578]|1[02])[\-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[\-.](0[469]|11)[\-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[\-.](02)[\-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[\-.](02)[\-.]29" \
+    FILE=$(echo "$FILE" | tr -d "[:blank:]" | awk -F ',' -v dateregex="((18|19|20)[0-9]{2}[\-.](0[13578]|1[02])[\-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[\-.](0[469]|11)[\-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[\-.](02)[\-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[\-.](02)[\-.]29" \
                             -v ageregex="^[ _0-9_ ]*$" \
                             'NR==1; NR > 1{ if ($2 ~ dateregex && $3 ~ ageregex)
                                 {
@@ -40,7 +39,7 @@ validateInput(){
 
 # Filter functions
 dateAfterFilter(){
-    OUT=$(echo "$FILE" | awk -F ',' -v date="$AFTER_DATE" '{ if ($2 >= date) print $0}')
+    OUT=$(echo "$FILE"| awk -F ',' -v date="$AFTER_DATE" '{ if ($2 >= date) print $0}')
     echo "$OUT"
 }
 
@@ -62,7 +61,6 @@ infected(){
 
 gender(){
     OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$4]++;}END{for(i in A) print i ":", A[i]}')
-    echo "$OUT"
 }
 
 merge(){
@@ -71,7 +69,7 @@ merge(){
 }
 
 age(){
-    OUT=$(echo "$FILE" |\
+    OUT=$(echo "$FILE"|\
         awk -F ',' \
         'NR>1{
             if ($3 >= 0 && $3 <=5)
@@ -115,37 +113,57 @@ age(){
             print ">105  :", B[11];
             print "None  :", B[12];
         }')
-    echo "$OUT"
 }
 
 daily(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$2]++;}END{for(i in A) print i ":", A[i]}'| sort -nk1)
-    echo "$OUT"
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{A[$2]++;}END{for(i in A) print i ":", A[i]}'| sort -nk1)
 }
 
 monthly(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{print $2}'|awk -F '-' '{ print $1 "-" $2}'| awk '{A[$1]++}END{for(i in A) print i ":", A[i]}'| sort -nk1)
-    echo "$OUT"
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{print $2}'|awk -F '-' '{ print $1 "-" $2}'| awk '{A[$1]++}END{for(i in A) print i ":", A[i]}'| sort -nk1)
 }
 
 yearly(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{print $2}'|awk -F '-' '{A[$1]++;}END{for(i in A){} print i ":", A[i]}'| sort -nk1)
-    echo "$OUT"
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{print $2}'|awk -F '-' '{A[$1]++;}END{for(i in A) print i ":", A[i]}'| sort -nk1)
 }
 
 countries(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}}' | sort -k1)
-    echo "$OUT"   
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}}' | sort -k1) 
 }
 
 districts(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$6]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} '| sort -k1)
-    echo "$OUT"  
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$6]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} '| sort -k1)  
 }
 
 regions(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$5]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} ' | sort -k1)
-    echo "$OUT"  
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{A[$5]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} ' | sort -k1)
+
+}
+
+printHistogram(){
+    OUT=$(echo "$OUT"| awk -F ':' -v width=$WIDTH -v infected=$INFECTED\
+    '{A[$1]=$2}END{max = 0
+        for (i in A){
+            if (max < A[i])
+                max = A[i]}
+        for (i in A){
+            if (width == ""){
+                len = A[i]/infected
+                for (j=1; j <= len; j++)
+                    line = sprintf("%s%s", line, "#")
+                print i ":", line;
+                line = ""
+            }
+            else {
+                len = (A[i]*int(width))/max;
+                for (j=1; j <= len; j++)
+                    line = sprintf("%s%s", line, "#")
+                print i ":", line;
+                line = ""
+            }
+        }
+    }' | sort -k1)
+    echo "$OUT"
 }
 
 # Parsing filter tag and commands
@@ -191,11 +209,11 @@ while [ $# -gt 0 ]; do
                 shift
                 shift
             else
-                echo -e "Wrong date format or missing date parameter"
+                echo "Wrong date format or missing date parameter" 1>&2
                 exit 1
             fi
         else
-            echo -e "-a: Missing date parameter"
+            echo "-a: Missing date parameter" 1>&2
             exit 1
         fi
         ;;
@@ -209,11 +227,11 @@ while [ $# -gt 0 ]; do
                 shift
                 shift
             else
-                echo -e "Wrong date format or missing date parameter"
+                echo "Wrong date format or missing date parameter" 1>&2
                 exit 1
             fi
         else
-            echo -e "-a: Missing date parameter"
+            echo "-a: Missing date parameter" 1>&2
             exit 1
         fi
         ;;   
@@ -227,17 +245,16 @@ while [ $# -gt 0 ]; do
                 shift
                 shift
             else
-                echo -e "Wrong gender format or missing gender parameter"
+                echo "Wrong gender format or missing gender parameter" 1>&2
                 exit 1
             fi
         else
-            echo -e "-g: Missing gender parameter"
+            echo "-g: Missing gender parameter" 1>&2
             exit 1
         fi
         ;;
     -s)
         if [[ $2 =~ [0-9]+ ]]; then
-            WIDTH_SET=1
             WIDTH="$2"
             shift
             shift
@@ -245,6 +262,7 @@ while [ $# -gt 0 ]; do
         else
             shift
         fi
+        WIDTH_SET=1
         ;;
 
     *.csv)
@@ -266,7 +284,7 @@ while [ $# -gt 0 ]; do
         ;;
 
     ?*)
-        echo -e "Invalid command"
+        echo "Invalid command" 1>&2
         exit 1
         ;;
     *)
@@ -315,34 +333,98 @@ case $COMMAND in
         ;;
     gender)
         gender
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=100000
+            printHistogram
+            exit 0
+        fi
         ;;
     age)
         age
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=10000
+            printHistogram
+            exit 0
+        fi
         ;;
     daily)
         daily
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=500
+            printHistogram
+            exit 0
+        fi
         ;;
     monthly)
         monthly
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=10000
+            printHistogram
+            exit 0
+        fi
         ;;
     yearly)
         yearly
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=100000
+            printHistogram
+            exit 0
+        fi
         ;;
     countries)
         countries
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=100
+            printHistogram
+            exit 0
+        fi
         ;;
     districts)
         districts
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=1000
+            printHistogram
+            exit 0
+        fi
         ;;
     regions)
         regions
-        exit 0
+        if [ $WIDTH_SET -eq 0 ];
+        then
+            echo "$OUT"
+            exit 0
+        else
+            INFECTED=10000
+            printHistogram
+            exit 0
+        fi
         ;;
 esac
