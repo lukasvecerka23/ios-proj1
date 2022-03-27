@@ -69,7 +69,7 @@ merge(){
     # Files are already merged from parsing
     echo "$FILE"
 }
-# {A[$3]++;}
+
 age(){
     OUT=$(echo "$FILE" |\
         awk -F ',' \
@@ -119,28 +119,32 @@ age(){
 }
 
 daily(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$2]++;}END{for(i in A){} print i ":", A[i]}'| sort -nk2)
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$2]++;}END{for(i in A) print i ":", A[i]}'| sort -nk1)
     echo "$OUT"
 }
 
-#monthly(){
-#}
+monthly(){
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{print $2}'|awk -F '-' '{ print $1 "-" $2}'| awk '{A[$1]++}END{for(i in A) print i ":", A[i]}'| sort -nk1)
+    echo "$OUT"
+}
 
-#yearly(){
-#}
+yearly(){
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{print $2}'|awk -F '-' '{A[$1]++;}END{for(i in A){} print i ":", A[i]}'| sort -nk1)
+    echo "$OUT"
+}
 
 countries(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}}' | sort -nk8)
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}}' | sort -k1)
     echo "$OUT"   
 }
 
 districts(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$6]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} '| sort -nk6)
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$6]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} '| sort -k1)
     echo "$OUT"  
 }
 
 regions(){
-    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$5]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} ' | sort -nk5)
+    OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$5]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}} ' | sort -k1)
     echo "$OUT"  
 }
 
@@ -315,14 +319,19 @@ case $COMMAND in
         ;;
     age)
         age
+        exit 0
         ;;
     daily)
         daily
         exit 0
         ;;
     monthly)
+        monthly
+        exit 0
         ;;
     yearly)
+        yearly
+        exit 0
         ;;
     countries)
         countries
