@@ -53,7 +53,7 @@ genderFilter(){
     echo "$OUT"
 }
 
-# Command function
+# Command functions
 infected(){
     OUT=$(echo "$FILE" | awk 'END{print NR-1}')
     echo "$OUT"
@@ -61,11 +61,6 @@ infected(){
 
 gender(){
     OUT=$(echo "$FILE" | awk -F ',' 'NR>1{A[$4]++;}END{for(i in A) print i ":", A[i]}')
-}
-
-merge(){
-    # Files are already merged from parsing
-    echo "$FILE"
 }
 
 age(){
@@ -128,7 +123,7 @@ yearly(){
 }
 
 countries(){
-    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i=="") print "None:", A[i]; else print i ":", A[i]}}' | sort -k1) 
+    OUT=$(echo "$FILE"| awk -F ',' 'NR>1{A[$8]++;}END{for(i in A){if (i!="") print i ":", A[i]}}' | sort -k1) 
 }
 
 districts(){
@@ -328,7 +323,7 @@ case $COMMAND in
         exit 0
         ;;
     merge)
-        merge
+        echo "$FILE"
         exit 0
         ;;
     gender)
