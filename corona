@@ -1,6 +1,8 @@
 #!/bin/bash
 
-
+# IOS Projekt 1
+# Lukas Vecerka 1BIT <xvecer30@stud.fit.vutbr.cz>
+# 2021/2022
 
 export POSIXLY_CORRECT=yes
 export LC_NUMERIC=en_US.UTF-8
@@ -19,7 +21,7 @@ FILE_SET=0
 # Function for date validation using regex
 checkDate(){
     local status=1
-    if [[ $1 =~ ((18|19|20)[0-9]{2}[\-.](0[13578]|1[02])[\-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[\-.](0[469]|11)[\-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[\-.](02)[\-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[\-.](02)[\-.]29 ]];
+    if [[ $1 =~ ((18|19|20)[0-9]{2}[-.](0[13578]|1[02])[-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[-.](0[469]|11)[-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[-.](02)[-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[-.](02)[-.]29 ]];
     then
         status=0
     fi
@@ -28,14 +30,14 @@ checkDate(){
 
 validateInput(){
     FILE=$(echo "$FILE" | grep "\S" $1)
-    FILE=$(echo "$FILE" | tr -d "[:blank:]" | awk -F ',' -v dateregex="((18|19|20)[0-9]{2}[\-.](0[13578]|1[02])[\-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[\-.](0[469]|11)[\-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[\-.](02)[\-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[\-.](02)[\-.]29" \
+    FILE=$(echo "$FILE" | tr -d "[:blank:]" | awk -F ',' -v dateregex="((18|19|20)[0-9]{2}[-.](0[13578]|1[02])[-.](0[1-9]|[12][0-9]|3[01]))|(18|19|20)[0-9]{2}[-.](0[469]|11)[-.](0[1-9]|[12][0-9]|30)|(18|19|20)[0-9]{2}[-.](02)[-.](0[1-9]|1[0-9]|2[0-8])|(((18|19|20)(04|08|[2468][048]|[13579][26]))|2000)[-.](02)[-.]29" \
                             -v ageregex="^[ _0-9_ ]*$" \
-                            'NR==1; NR > 1{ if ($2 ~ dateregex && $3 ~ ageregex)
+                            'NR==1; NR>1{ if ($2 ~ dateregex && $3 ~ ageregex)
                                 {
                                     print $0;
                                 }
-                                else if (!($2 ~ dateregex)) print "Invalid date: " $0 | "cat 1>&2";
-                                else if (!($3 ~ !ageregex)) print "Invalid age: " $0 | "cat 1>&2";
+                                else if (!($2 ~ dateregex) && $2 != "datum") print "Invalid date: " $0 | "cat 1>&2";
+                                else if (!($3 ~ !ageregex) && $2 != "datum") print "Invalid age: " $0 | "cat 1>&2";
                                 }')
 }
 
@@ -50,7 +52,6 @@ dateBeforeFilter(){
 
 genderFilter(){
     FILE=$(echo "$FILE" | awk -F ',' -v g="$GENDER" 'NR==1;NR>1{ if ($4 == g) print $0}')
-    #echo "$OUT"
 }
 
 # Command functions
@@ -142,19 +143,18 @@ printHistogram(){
             if (max < A[i])
                 max = A[i]}
         for (i in A){
+            line=""
             if (width == ""){
                 len = A[i]/infected
                 for (j=1; j <= len; j++)
                     line = sprintf("%s%s", line, "#")
                 print i ":", line;
-                line = ""
             }
             else {
                 len = (A[i]*int(width))/max;
                 for (j=1; j <= len; j++)
                     line = sprintf("%s%s", line, "#")
                 print i ":", line;
-                line = ""
             }
         }
     }' | sort -k1)
@@ -261,19 +261,19 @@ while [ $# -gt 0 ]; do
         ;;
 
     *.csv)
-        FILE=$FILE"$(cat $1| sed 1d)"
+        FILE=$FILE"$(cat $1)"
         FILE_SET=1
         shift
         ;;
 
     *.csv.gz)
-        FILE=$FILE"$(gzcat $1|sed 1d)"
+        FILE=$FILE"$(gzcat $1)"
         FILE_SET=1
         shift
         ;;
 
     *.csv.bz2)
-        FILE=$FILE"$(bzcat $1|sed 1d)"
+        FILE=$FILE"$(bzcat $1)"
         FILE_SET=1
         shift
         ;;
@@ -291,7 +291,7 @@ done
 
 if [ $FILE_SET -eq 0 ];
     then
-    FILE=$FILE"$(cat | sed 1d)"
+    FILE=$FILE"$(cat)"
 fi
 
 
