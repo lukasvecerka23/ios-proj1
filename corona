@@ -39,18 +39,16 @@ validateInput(){
 
 # Filter functions
 dateAfterFilter(){
-    OUT=$(echo "$FILE"| awk -F ',' -v date="$AFTER_DATE" '{ if ($2 >= date) print $0}')
-    echo "$OUT"
+    FILE=$(echo "$FILE"| awk -F ',' -v date="$AFTER_DATE" 'NR==1;NR>1{ if ($2 >= date) print $0}')
 }
 
 dateBeforeFilter(){
-    OUT=$(echo "$FILE" | awk -F ',' -v date="$BEFORE_DATE" '{ if ($2 <= date) print $0}')
-    echo "$OUT"
+    FILE=$(echo "$FILE" | awk -F ',' -v date="$BEFORE_DATE" 'NR==1;NR>1{ if ($2 <= date) print $0}')
 }
 
 genderFilter(){
-    OUT=$(echo "$FILE" | awk -F ',' -v g="$GENDER" '{ if ($4 == g) print $0}')
-    echo "$OUT"
+    FILE=$(echo "$FILE" | awk -F ',' -v g="$GENDER" 'NR==1;NR>1{ if ($4 == g) print $0}')
+    #echo "$OUT"
 }
 
 # Command functions
@@ -291,7 +289,7 @@ done
 
 if [ $FILE_SET -eq 0 ];
     then
-    FILE=$FILE"$(< /dev/stdin)"
+    FILE=$FILE"$(cat | sed 1d)"
 fi
 
 
@@ -299,17 +297,17 @@ validateInput
 
 if [ $DATE_AFTER_SET -eq 1 ];
 then
-    FILE=$(dateAfterFilter)
+    dateAfterFilter
 fi
 
 if [ $DATE_BEFORE_SET -eq 1 ];
 then
-    FILE=$(dateBeforeFilter)
+    dateBeforeFilter
 fi
 
 if [ $GENDER_SET -eq 1 ];
 then
-    FILE=$(genderFilter)
+    genderFilter
 fi
 
 if [ "$COMMAND" = "" ];
